@@ -86,7 +86,7 @@
 			unset($this->minusArray);
 			$this->minusArray=array();
 			/*   */
-
+			
 			$this->error=false;
 			$this->altePlugins=array("tt_address"=>"list_type='0'",
 									"tt_board"=>"(list_type='2' OR list_type='4')",
@@ -153,6 +153,10 @@
 							if((count($this->plussArray)>0)&&(!$this->debugMode)){
 								$GLOBALS['TYPO3_DB']->exec_DELETEquery("cache_pages","page_id IN (".trim(implode(",",$this->plussArray),",").")");
 								$GLOBALS['TYPO3_DB']->exec_DELETEquery("cache_pagesection", "page_id IN (".trim(implode(",",$this->plussArray),",").")");
+								if(t3lib_extMgm::isLoaded('realurl')){
+									$GLOBALS['TYPO3_DB']->exec_DELETEquery("tx_realurl_urlencodecache","page_id IN (".trim(implode(",",$this->plussArray),",").")");
+									$GLOBALS['TYPO3_DB']->exec_DELETEquery("tx_realurl_urldecodecache","page_id IN (".trim(implode(",",$this->plussArray),",").")");
+								}
 							};
 						};
 
