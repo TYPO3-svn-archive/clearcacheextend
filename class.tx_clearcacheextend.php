@@ -81,6 +81,8 @@
 
 			$this->error=false;
 			$this->debugMode=false;
+			$this->showDebug=false;
+			$this->debugChar='';
 			unset($this->plussArray);
 			$this->plussArray=array();
 			unset($this->minusArray);
@@ -103,9 +105,14 @@
 			$getstring=$confArray['cacheCmd'];
 			if(is_array($confArray) && $getstring!="" && !t3lib_div::testInt($getstring)){
 				$command=substr($getstring,0,strpos($getstring,"("));
-				if(substr($getstring,-1)=="d"){
+				$this->debugChar=substr($getstring,-1);
+				if($this->debugChar=="d" || $this->debugChar=="l"){
+					if($this->debugChar=="d"){
+						$this->showDebug=true;
+					}
 					$getstring=substr($getstring,0,-1);
 					$this->debugMode=true;
+										
 					global $LANG;
 					$LANG->includeLLFile("EXT:clearcacheextend/locallang.php");
 				};
@@ -115,9 +122,12 @@
 				};
 
 				if($getstring=='none'){
-					if($this->debugMode){
-						//echo "<strong>".$LANG->getLL("syntax_none")."</strong>";
-					}
+					/*if($this->debugMode){
+						t3lib_div::devLog($LANG->getLL("syntax").':'.$LANG->getLL("syntax_none").' ['.$confArray['cacheCmd'].']','clearcacheextend',0);
+						if($this->showDebug){
+							echo "<br />".$LANG->getLL("syntax")."<strong style=\"color:green;\">".$LANG->getLL("syntax_none")."</strong>";
+						}
+					}*/
 				}
 				if(($command=="alias") || ($command=="sub") || ($command=="contains") || ($command=="pages")){
 
@@ -163,14 +173,19 @@
 					};
 					if($this->debugMode){
 						if(!$this->error){
-							echo "<br />".$LANG->getLL("syntax")."<strong style=\"color:green;\">".$LANG->getLL("syntax_ok")."</strong>
-							<br /><br />".$LANG->getLL("cache_cleared").trim(implode(",",$this->plussArray),",")."
-							<br /><br />";
+							t3lib_div::devLog($LANG->getLL("syntax").':'.$LANG->getLL("syntax_ok").' ['.$confArray['cacheCmd'].']','clearcacheextend',0,$LANG->getLL("cache_cleared").trim(implode(",",$this->plussArray),","));
+							if($this->showDebug){
+								echo "<br />".$LANG->getLL("syntax")."<strong style=\"color:green;\">".$LANG->getLL("syntax_ok")."</strong>
+								<br /><br />".$LANG->getLL("cache_cleared").trim(implode(",",$this->plussArray),",")."
+								<br /><br />";
+							}
 						}else{
-							echo "<br />".$LANG->getLL("syntax")."<strong style=\"color:red;\">".$LANG->getLL("syntax_error")."</strong>
-							<br />";
+							t3lib_div::devLog($LANG->getLL("syntax").':'.$LANG->getLL("syntax_error").' ['.$confArray['cacheCmd'].']','clearcacheextend',2);
+							if($this->showDebug){
+								echo "<br />".$LANG->getLL("syntax")."<strong style=\"color:red;\">".$LANG->getLL("syntax_error")."</strong>
+								<br />";
+							}
 						};
-
 					}
 				}
 			};
@@ -214,9 +229,12 @@
 
 			if((substr($newArray[0],0,8)!="changed(") || (substr($newArray[0],-1)!=")") || (strlen($newArray[0]) < 10) || (count($newArray) <3 ) || count($newArray) > 5){
 				if($this->debugMode){
-					echo "<br />".$GLOBALS['LANG']->getLL("syntax")."<strong class=\"color:red;\">".$GLOBALS['LANG']->getLL("syntax_error")."</strong>
-					<br />";
-					echo "<strong>".$GLOBALS['LANG']->getLL("syntax_error_chaged_empty")."</strong><br />";
+					t3lib_div::devLog($LANG->getLL("syntax").':'.$LANG->getLL("syntax_error"),'clearcacheextend',2,$GLOBALS['LANG']->getLL("syntax_error_chaged_empty"));
+					if($this->showDebug){
+						echo "<br />".$GLOBALS['LANG']->getLL("syntax")."<strong class=\"color:red;\">".$GLOBALS['LANG']->getLL("syntax_error")."</strong>
+						<br />";
+						echo "<strong>".$GLOBALS['LANG']->getLL("syntax_error_chaged_empty")."</strong><br />";
+					}
 				}
 				return 'none';
 			};
@@ -224,27 +242,48 @@
 			$command=substr($newArray[0],8,-1);
 			t3lib_div::loadTCA($command);
 			if(!is_array($GLOBALS['TCA'][$command])){
-				echo "<strong style=\"color:red;\">".str_replace('###table###',$command,$GLOBALS['LANG']->getLL('syntax_error_wrong_table'))."</strong><br />";
-				return 'none';
+				if($this->debugMode){
+					t3lib_div::devLog($LANG->getLL("syntax").':'.$LANG->getLL("syntax_error"),'clearcacheextend',2,str_replace('###table###',$command,$GLOBALS['LANG']->getLL('syntax_error_wrong_table')));
+					if($this->showDebug){
+						echo "<strong style=\"color:red;\">".str_replace('###table###',$command,$GLOBALS['LANG']->getLL('syntax_error_wrong_table'))."</strong><br />";
+						return 'none';
+					}
+				}
 			};
 
 			if($this->debugMode){
-				echo "<strong>".str_replace('###table###',$command,$GLOBALS['LANG']->getLL('syntax_changed_table'))."</strong><br />";
-				echo '<table cellspacing="0" cellpadding="0" border="0"><tr><td style="width:50px;">&nbsp;</td><td>';
+				t3lib_div::devLog(str_replace('###table###',$command,$GLOBALS['LANG']->getLL('syntax_changed_table')),'clearcacheextend',0);
+				if($this->showDebug){
+					echo "<strong>".str_replace('###table###',$command,$GLOBALS['LANG']->getLL('syntax_changed_table'))."</strong><br />";
+					echo '<table cellspacing="0" cellpadding="0" border="0"><tr><td style="width:50px;">&nbsp;</td><td>';
+				}
 				if($newArray[1]!='none'){
-					echo "<strong>".$GLOBALS['LANG']->getLL("syntax_changed_truecommand").$newArray[1]."</strong><br />";
-					$this->clear_cacheCmdExtend(array('cacheCmd'=>$newArray[1].'d'),$objArray);
+					t3lib_div::devLog($GLOBALS['LANG']->getLL("syntax_changed_truecommand").$newArray[1],'clearcacheextend',0);
+					if($this->showDebug){
+						echo "<strong>".$GLOBALS['LANG']->getLL("syntax_changed_truecommand").$newArray[1]."</strong><br />";
+					}
+					$this->clear_cacheCmdExtend(array('cacheCmd'=>$newArray[1].$this->debugChar),$objArray);
 				}else{
-					echo "<strong>".$GLOBALS['LANG']->getLL("syntax_changed_truecommand").$GLOBALS['LANG']->getLL("syntax_none_command")."</strong><br />";
+					t3lib_div::devLog($GLOBALS['LANG']->getLL("syntax_changed_truecommand").$GLOBALS['LANG']->getLL("syntax_none_command"),'clearcacheextend',0);
+					if($this->showDebug){
+						echo "<strong>".$GLOBALS['LANG']->getLL("syntax_changed_truecommand").$GLOBALS['LANG']->getLL("syntax_none_command")."</strong><br />";
+					}
 				};
-
 				if($newArray[3]!='none'){
-					echo "<strong>".$GLOBALS['LANG']->getLL("syntax_changed_falsecommand").$newArray[3]."</strong><br />";
-					$this->clear_cacheCmdExtend(array('cacheCmd'=>$newArray[3].'d'),$objArray);
+					t3lib_div::devLog($GLOBALS['LANG']->getLL("syntax_changed_falsecommand").$newArray[3],'clearcacheextend',0);
+					if($this->showDebug){
+						echo "<strong>".$GLOBALS['LANG']->getLL("syntax_changed_falsecommand").$newArray[3]."</strong><br />";
+					}
+					$this->clear_cacheCmdExtend(array('cacheCmd'=>$newArray[3].$this->debugChar),$objArray);
 				}else{
-					echo "<strong>".$GLOBALS['LANG']->getLL("syntax_changed_falsecommand").$GLOBALS['LANG']->getLL("syntax_none_command")."</strong><br />";
+					t3lib_div::devLog($GLOBALS['LANG']->getLL("syntax_changed_falsecommand").$GLOBALS['LANG']->getLL("syntax_none_command"),'clearcacheextend',0);
+					if($this->showDebug){
+						echo "<strong>".$GLOBALS['LANG']->getLL("syntax_changed_falsecommand").$GLOBALS['LANG']->getLL("syntax_none_command")."</strong><br />";
+					}
 				};
-				echo '</td></tr></table>';
+				if($this->showDebug){
+					echo '</td></tr></table>';
+				}
 			}else{
 				if(is_array($objArray->datamap[$command]) || is_array($objArray->cmdmap[$table])){
 					$this->clear_cacheCmdExtend(array('cacheCmd'=>$newArray[1]),$objArray);
@@ -253,7 +292,6 @@
 				};
 			}
 			return 'none';
-
 		}
 
 	/**
@@ -381,45 +419,6 @@
 							};
 						}
 
-						/* DAM MM begin */
-						/*$respages=$GLOBALS['TYPO3_DB']->exec_SELECTquery(
-							"pages.uid",
-							"pages,tx_dam_mm_ref,tx_dam",
-							"pages.deleted=0 AND tx_dam.deleted=0
-							AND pages.hidden=0 AND tx_dam.hidden=0
-							AND tx_dam_mm_ref.uid_local=tx_dam.uid AND tx_dam_mm_ref.uid_foreign=pages.uid AND tx_dam_mm_ref.tablenames='pages'
-							AND pages.uid IN (".$sqlNewPlusArray.")");
-						if($GLOBALS['TYPO3_DB']->sql_num_rows($respages) > 0){
-							while ($rowpages = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($respages)){
-								$newPlussArrayTemp[$rowpages['uid']]=$rowpages['uid'];
-							};
-						};
-						$restt_content=$GLOBALS['TYPO3_DB']->exec_SELECTquery(
-							"pages.uid",
-							"pages,tt_content,tx_dam_mm_ref,tx_dam",
-							"pages.deleted=0 AND tt_content.deleted=0 AND tx_dam.deleted=0
-							AND tt_content.hidden=0 AND pages.hidden=0 AND tx_dam.hidden=0
-							AND tx_dam_mm_ref.uid_local=tx_dam.uid AND tt_content.pid=pages.uid AND tx_dam_mm_ref.uid_foreign=tt_content.uid AND tx_dam_mm_ref.tablenames='tt_content'
-							AND pages.uid IN (".$sqlNewPlusArray.")");
-						if($GLOBALS['TYPO3_DB']->sql_num_rows($restt_content) > 0){
-							while ($rowtt_content = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($restt_content)){
-								$newPlussArrayTemp[$rowtt_content['uid']]=$rowtt_content['uid'];
-							};
-						};
-						$resp_l_o=$GLOBALS['TYPO3_DB']->exec_SELECTquery(
-							"pages.uid",
-							"pages,pages_language_overlay,tx_dam_mm_ref,tx_dam",
-							"pages.deleted=0 AND tx_dam.deleted=0
-							AND pages_language_overlay.hidden=0 AND pages.hidden=0 AND tx_dam.hidden=0
-							AND tx_dam_mm_ref.uid_local=tx_dam.uid AND pages_language_overlay.pid=pages.uid AND tx_dam_mm_ref.uid_foreign=pages_language_overlay.uid AND tx_dam_mm_ref.tablenames='pages_language_overlay'
-							AND pages.uid IN (".$sqlNewPlusArray.")");
-						if($GLOBALS['TYPO3_DB']->sql_num_rows($resp_l_o) > 0){
-							while ($rowp_l_o = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($resp_l_o)){
-								$newPlussArrayTemp[$rowp_l_o['uid']]=$rowp_l_o['uid'];
-							};
-						};*/
-						/* DAM MM end */
-
 						/* process the array from all DAM querys begin */
 						foreach($newPlussArrayTemp as $newPluss){
 							if($recursive){
@@ -462,7 +461,6 @@
 								AND pages.uid IN (".trim(implode($newPlusArray,","),",").")");
 						};
 						if($GLOBALS['TYPO3_DB']->sql_num_rows($res) > 0){
-							/*$row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res);*/
 							while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res))	{
 								if($recursive){
 									$this->getSubPages($row['uid'],$plussArray);
@@ -578,11 +576,7 @@
 			foreach($comVal as $comValKey=>$comValVal){
 				switch(key($comValVal)){
 					case("pages"):{
-						//$this->processPages($comValVal['pages'],$plussArray,$minusArray);
-						$this->error=true;
-						if($this->debugMode){
-							echo "<strong style=\"color:red;\">".$GLOBALS['LANG']->getLL("syntax_error_pages_bud_inserting")."</strong>";
-						};
+						return $this->makeDebug("syntax_error_pages_bud_inserting");
 						break;
 					};
 					case("int"):{
@@ -637,11 +631,7 @@
 			foreach($comVal as $comValKey=>$comValVal){
 				switch(key($comValVal)){
 					case("pages"):{
-						//$this->processPages($comValVal['pages'],$newMinusArray,$newPlusArray);
-						$this->error=true;
-						if($this->debugMode){
-							echo "<strong style=\"color:red;\">".$GLOBALS['LANG']->getLL("syntax_error_pages_bud_inserting")."</strong>";
-						};
+						return $this->makeDebug("syntax_error_pages_bud_inserting");
 						break;
 					};
 					case("int"):{
@@ -864,9 +854,15 @@
 		function makeDebug($string,$patern=array(),$replace=array()){
 			if($this->debugMode){
 				if(count($replace)==0){
-					echo "<strong style=\"color:red;\">".$GLOBALS['LANG']->getLL($string)."</strong>";
+					t3lib_div::devLog($LANG->getLL("syntax").':'.$LANG->getLL("syntax_error"),'clearcacheextend',2,$GLOBALS['LANG']->getLL($string));
+					if($this->showDebug){
+						echo "<strong style=\"color:red;\">".$GLOBALS['LANG']->getLL($string)."</strong>";
+					}
 				}else{
-					echo "<strong style=\"color:red;\">".str_replace($patern,$replace,$GLOBALS['LANG']->getLL($string))."</strong>";
+					t3lib_div::devLog($LANG->getLL("syntax").':'.$LANG->getLL("syntax_error"),'clearcacheextend',2,str_replace($patern,$replace,$GLOBALS['LANG']->getLL($string)));
+					if($this->showDebug){
+						echo "<strong style=\"color:red;\">".str_replace($patern,$replace,$GLOBALS['LANG']->getLL($string))."</strong>";
+					}
 				};
 			};
 			$this->error=true;
