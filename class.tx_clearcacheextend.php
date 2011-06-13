@@ -36,21 +36,22 @@
  *
  *
  *
- *   61: class tx_clearcacheextend
- *   76:     function clear_cacheCmdExtend($confArray,$objArray)
- *  182:     function hasChanged($objArray,$string)
- *  263:     function processPages($comVal,&$plussArray,&$minusArray)
- *  278:     function processContains($comVal,&$plussArray,&$minusArray,$recursive=false)
- *  483:     function getRelatedUids(&$plussArray,$uid)
- *  542:     function processAlias($comVal,&$plussArray,&$minusArray,$recursive=true)
- *  573:     function processSub($comVal,&$plussArray,&$minusArray)
- *  630:     function processExclude($comVal,&$plussArray,&$minusArray)
- *  686:     function getSubPages($uid,&$plussArray)
- *  706:     function getCommandArrayIntern($string)
- *  722:     function getCommandArray($string)
- *  860:     function makeDebug($string,$patern=array(),$replace=array())
+ *   62: class tx_clearcacheextend
+ *   77:     function clear_cacheCmdExtend($confArray,$objArray)
+ *  219:     function hasChanged($objArray,$string)
+ *  327:     function processPages($comVal,&$plussArray,&$minusArray)
+ *  342:     function processContains($comVal,&$plussArray,&$minusArray,$recursive=false)
+ *  507:     function getRelatedUids(&$plussArray,$uid)
+ *  566:     function processAlias($comVal,&$plussArray,&$minusArray,$recursive=true)
+ *  597:     function processSub($comVal,&$plussArray,&$minusArray)
+ *  650:     function processExclude($comVal,&$plussArray,&$minusArray)
+ *  702:     function getSubPages($uid,&$plussArray)
+ *  722:     function getCommandArrayIntern($string)
+ *  742:     function getCommandArray($string)
+ *  879:     protected function findRootPid($pageID)
+ *  901:     function makeDebug($string,$patern=array(),$replace=array())
  *
- * TOTAL FUNCTIONS: 12
+ * TOTAL FUNCTIONS: 13
  * (This index is automatically created/updated by the extension "extdeveval")
  *
  */
@@ -79,6 +80,8 @@
 			 *	results from earlier commands
 			*/
 
+			$this->objArray = $objArray;
+			$this->confArray = $confArray;
 			$this->error=false;
 			$this->debugMode=false;
 			$this->showDebug=false;
@@ -88,7 +91,7 @@
 			unset($this->minusArray);
 			$this->minusArray=array();
 			/*   */
-			
+
 			$this->error=false;
 			$this->altePlugins=array("tt_address"=>"list_type='0'",
 									"tt_board"=>"(list_type='2' OR list_type='4')",
@@ -112,7 +115,7 @@
 					}
 					$getstring=substr($getstring,0,-1);
 					$this->debugMode=true;
-										
+
 					global $LANG;
 					$LANG->includeLLFile("EXT:clearcacheextend/locallang.php");
 				};
@@ -160,16 +163,31 @@
 									if($this->plussArray[$minusArr]==$minusArr){unset($this->plussArray[$minusArr]);}
 								};
 							};
+
 							if((count($this->plussArray)>0)&&(!$this->debugMode)){
-								$GLOBALS['TYPO3_DB']->exec_DELETEquery("cache_pages","page_id IN (".trim(implode(",",$this->plussArray),",").")");
-								$GLOBALS['TYPO3_DB']->exec_DELETEquery("cache_pagesection", "page_id IN (".trim(implode(",",$this->plussArray),",").")");
-								if(t3lib_extMgm::isLoaded('realurl')){
-									$GLOBALS['TYPO3_DB']->exec_DELETEquery("tx_realurl_urlencodecache","page_id IN (".trim(implode(",",$this->plussArray),",").")");
-									$GLOBALS['TYPO3_DB']->exec_DELETEquery("tx_realurl_urldecodecache","page_id IN (".trim(implode(",",$this->plussArray),",").")");
+								$pageIds = $GLOBALS['TYPO3_DB']->cleanIntArray($this->plussArray);
+								if (TYPO3_UseCachingFramework) {
+									$pageCache = $GLOBALS['typo3CacheManager']->getCache(
+										'cache_pages'
+									);
+									$pageSectionCache = $GLOBALS['typo3CacheManager']->getCache(
+										'cache_pagesection'
+									);
+
+									foreach ($pageIds as $pageId) {
+										$pageCache->flushByTag('pageId_' . (int) $pageId);
+										$pageSectionCache->flushByTag('pageId_' . (int) $pageId);
+									}
+								} else {
+									$GLOBALS['TYPO3_DB']->exec_DELETEquery('cache_pages', 'page_id IN (' . implode(',', $pageIds) . ')');
+									$GLOBALS['TYPO3_DB']->exec_DELETEquery('cache_pagesection', 'page_id IN (' . implode(',', $pageIds) . ')'); // Originally, cache_pagesection was not cleared with cache_pages!
 								}
+ 								if(t3lib_extMgm::isLoaded('realurl')){
+									$GLOBALS['TYPO3_DB']->exec_DELETEquery('tx_realurl_urlencodecache','page_id IN (' . implode(',',$pageIds) . ')');
+									$GLOBALS['TYPO3_DB']->exec_DELETEquery('tx_realurl_urldecodecache','page_id IN (' . implode(',',$pageIds) . ')');
+ 								};
 							};
 						};
-
 					};
 					if($this->debugMode){
 						if(!$this->error){
@@ -239,7 +257,11 @@
 				return 'none';
 			};
 
-			$command=substr($newArray[0],8,-1);
+			$commandTemp = substr($newArray[0],8,-1);
+			$commandTempArray=t3lib_div::trimExplode(".",$commandTemp);
+			$this->currentCommand = $command = $commandTempArray[0];
+			$this->currentCommandField = $field = $commandTempArray[1];
+
 			t3lib_div::loadTCA($command);
 			if(!is_array($GLOBALS['TCA'][$command])){
 				if($this->debugMode){
@@ -285,7 +307,7 @@
 					echo '</td></tr></table>';
 				}
 			}else{
-				if(is_array($objArray->datamap[$command]) || is_array($objArray->cmdmap[$table])){
+				if((!$field && is_array($objArray->datamap[$command])) || $objArray->datamap[$command][$objArray->checkValue_currentRecord['uid']][$field] ||	is_array($objArray->cmdmap[$table])){
 					$this->clear_cacheCmdExtend(array('cacheCmd'=>$newArray[1]),$objArray);
 				}else{
 					$this->clear_cacheCmdExtend(array('cacheCmd'=>$newArray[3]),$objArray);
@@ -700,7 +722,11 @@
 		function getCommandArrayIntern($string){
 			if(t3lib_div::testInt($string)){
 				return array("int"=>$string);
-			}else{
+			} elseif($string=='self'|| $string=='root') {
+				$id = $this->currentCommand=='pages'?$this->objArray->checkValue_currentRecord['uid']:$this->objArray->checkValue_currentRecord['pid'];
+				$id = ($string=='root' ? $this->findRootPid($id) : $id);
+				return array("int"=>$id);
+ 			}else{
 				return $this->getCommandArray($string);
 
 			};
@@ -842,6 +868,27 @@
 				}
 			}
 		}
+
+	/**
+	 * Starts at the specified page ID and walks up the tree to find the nearest root page id.
+	 * This allows other WEC config modules to work relative to the appropriate root page.
+	 *
+	 * @param	integer		$pageId
+	 * @return	integer
+	 */
+	protected function findRootPid($pageID) {
+		$tsTemplate = t3lib_div::makeInstance("t3lib_tsparser_ext");
+		$tsTemplate->tt_track = 0;
+		$tsTemplate->init();
+
+		// Gets the rootLine
+		$sys_page = t3lib_div::makeInstance("t3lib_pageSelect");
+		$rootLine = $sys_page->getRootLine($pageID);
+		$tsTemplate->runThroughTemplates($rootLine);
+		$rootPid = $tsTemplate->rootId;
+
+		return $rootPid;
+	}
 
 	/**
 	 * function used in getCommandArray for print debug hits
