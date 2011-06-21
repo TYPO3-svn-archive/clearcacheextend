@@ -3,7 +3,7 @@
 ########################################################################
 # Extension Manager/Repository config file for ext "clearcacheextend".
 #
-# Auto generated 13-06-2011 15:24
+# Auto generated 21-06-2011 22:46
 #
 # Manual updates:
 # Only the data in the array - everything else is removed by next
@@ -15,7 +15,7 @@ $EM_CONF[$_EXTKEY] = array(
 	'description' => 'Extend TCEMAIN.clearCacheCmd width some userfull options like using of aliases, clearing whole branches, clearing pages on the ground of their content etc.',
 	'category' => 'be',
 	'shy' => 0,
-	'version' => '0.1.4',
+	'version' => '0.1.5',
 	'dependencies' => '',
 	'conflicts' => '',
 	'priority' => '',
@@ -40,7 +40,7 @@ $EM_CONF[$_EXTKEY] = array(
 		'suggests' => array(
 		),
 	),
-	'_md5_values_when_last_written' => 'a:9:{s:9:"ChangeLog";s:4:"1d3e";s:10:"README.txt";s:4:"9fa9";s:29:"class.tx_clearcacheextend.php";s:4:"7c56";s:12:"ext_icon.gif";s:4:"1bdc";s:17:"ext_localconf.php";s:4:"b16e";s:13:"locallang.php";s:4:"0a9e";s:14:"doc/manual.sxw";s:4:"16aa";s:19:"doc/wizard_form.dat";s:4:"887e";s:20:"doc/wizard_form.html";s:4:"ffd7";}',
+	'_md5_values_when_last_written' => 'a:9:{s:9:"ChangeLog";s:4:"6934";s:10:"README.txt";s:4:"9fa9";s:29:"class.tx_clearcacheextend.php";s:4:"8d54";s:12:"ext_icon.gif";s:4:"1bdc";s:17:"ext_localconf.php";s:4:"b16e";s:13:"locallang.php";s:4:"0a9e";s:14:"doc/manual.sxw";s:4:"4e1f";s:19:"doc/wizard_form.dat";s:4:"887e";s:20:"doc/wizard_form.html";s:4:"ffd7";}',
 	'suggests' => array(
 	),
 );

@@ -725,7 +725,7 @@
 			} elseif($string=='self'|| $string=='root') {
 				$id = $this->currentCommand=='pages'?$this->objArray->checkValue_currentRecord['uid']:$this->objArray->checkValue_currentRecord['pid'];
 				$id = ($string=='root' ? $this->findRootPid($id) : $id);
-				return array("int"=>$id);
+				return array("int"=>$id?$id:-1);
  			}else{
 				return $this->getCommandArray($string);
 
@@ -887,7 +887,7 @@
 		$tsTemplate->runThroughTemplates($rootLine);
 		$rootPid = $tsTemplate->rootId;
 
-		return $rootPid;
+		return $rootPid?$rootPid:$pageID;
 	}
 
 	/**
